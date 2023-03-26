@@ -10,6 +10,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom/dist/chartjs-plugin-zoom.min.js"></script>
   <script>
     // Получение контекста для рисования
     let canvas = window.document.querySelector('canvas');
@@ -18,16 +20,34 @@
     let chart = null;
     let pauseMode = false;
     // Функции
-    const realTimeDemo = (xData, yData, data) => {
-      let i = 50;
+    const onPanZoomStart = () => {
+      chart.stop();
+      pauseMode = true;
+    }
+    const onPanZoomComplete = () => {
+      if(chart.config.options.scales.x.max > (chart.getDatasetMeta(0).data.length - 5)){
+        pauseMode = false
+      }
+    }
+    const realTimeDemo = (xData, yData) => {
+      let startI = 50;
+      let xOffset = 30;
+      let i = startI;
       let interval = setInterval(()=>{
-        if(i > data.length) clearInterval(interval);
-        else if(!pauseMode){
-          chart.config.data.labels.push(xData[i]);
+        if((i+xOffset) > xData.length) clearInterval(interval);
+        else{
+          if(i === startI){
+            for(let i = startI; i < (startI + xOffset); i++){
+              chart.config.data.labels.push(xData[i]);
+            }
+          }
+          chart.config.data.labels.push(xData[i+xOffset]);
           chart.config.data.datasets[0].data.push(yData[i]);
-          chart.config.options.scales.x.min++;
-          chart.config.options.scales.x.max++;
-          chart.update();
+          if(!pauseMode){
+            chart.config.options.scales.x.min++;
+            chart.config.options.scales.x.max++;
+            chart.update();
+          }
           i++;
         }
       }, 400);
@@ -76,6 +96,25 @@
           color: 'rgba(74, 169, 230, 0.3)'
         }
       }
+      let zoomOptions = {
+        pan: {
+          enabled: true,
+          mode: 'x',
+          onPanStart: onPanZoomStart,
+          onPanComplete: onPanZoomComplete,
+        },
+        zoom: {
+          mode: 'x',
+          pinch: {
+            enabled: true
+          },
+          wheel: {
+            enabled: true
+          },
+          onZoomStart: onPanZoomStart,
+          onZoomComplete: onPanZoomComplete,
+        }
+      }
       let config = {
         type: 'line',
         data: data,
@@ -87,11 +126,15 @@
           plugins: {
             legend: {
               display: false
-            }
+            },
+            zoom: zoomOptions
           },
           animation: {
             duration: 400,
-            easing: 'linear'
+            easing: 'linear',
+            y: {
+              fn: (from, to, factor) => to
+            }
           }
         }
       }
@@ -113,7 +156,7 @@
       let yStartData = [];
       let xParseData = [];
       let yParseData = [];
-      for(let i = 0; i < data.length; i++){
+      for(let i = 0; i < xData.length; i++){
         if(i < 50){
           xStartData.push(xData[i]);
           yStartData.push(yData[i]);
@@ -123,10 +166,10 @@
         }
       }
       createLineChart(xStartData, yStartData);
-      realTimeDemo(xParseData, yParseData, data);
+      realTimeDemo(xParseData, yParseData);
     });
   
     // ОБРАБОТЧИКИ СОБЫТИЙ
-    window.addEventListener('click', ()=>pauseMode = !pauseMode);
+    // window.addEventListener('click', ()=>pauseMode = !pauseMode);
   </script>
 </body>
