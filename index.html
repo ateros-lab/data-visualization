@@ -20,6 +20,13 @@
     let chart = null;
     let pauseMode = false;
     // Функции
+    const getBarColor = (nowValue, previousValue) => {
+      if(nowValue > previousValue){
+        return 'rgba(107, 237, 141, 0.65)'
+      }else{
+        return 'rgba(237, 107, 107, 0.65)'
+      }      
+    }
     const onPanZoomStart = () => {
       chart.stop();
       pauseMode = true;
@@ -43,6 +50,8 @@
           }
           chart.config.data.labels.push(xData[i+xOffset]);
           chart.config.data.datasets[0].data.push(yData[i]);
+          chart.config.data.datasets[1].data.push(yData[i]/4);
+          chart.config.data.datasets[1].backgroundColor.push(getBarColor(yData[i], yData[i-1]));
           if(!pauseMode){
             chart.config.options.scales.x.min++;
             chart.config.options.scales.x.max++;
@@ -58,16 +67,34 @@
       gradient.addColorStop(1, 'rgba(74, 169, 230, 0.001)');
       let data = {
         labels: xData,
-        datasets: [{
-          label: 'Global Price of Aluminum',
-          data: yData,
-          pointStyle: false,
-          fill: true,
-          backgroundColor: gradient,
-          borderWidth: 2,
-          borderColor: 'rgba(74, 169, 230, 1)',
-          tension: 0.2
-        }]
+        datasets: [
+          {
+            type: 'line',
+            label: 'Global Price of Aluminum',
+            data: yData,
+            pointStyle: false,
+            fill: true,
+            backgroundColor: 'rgba(74, 169, 230, 0.0)',
+            borderWidth: 2.5,
+            borderColor: 'rgba(74, 169, 230, 1)',
+            tension: 0.2
+          },
+          {
+            type: 'bar',
+            label: 'Global Price of Aluminum',
+            data: yData.map(elem => elem/4),
+            pointStyle: false,
+            fill: true,
+            backgroundColor: yData.map((elem, index) => getBarColor(elem, yData[index-1])),
+            border: false,
+            tension: 0.2,
+            animations: {
+              x: {
+                fn: (from, to, factor) => to
+              }
+            }
+          }
+        ]
       }
       let xScaleConfig = {
         min: 0,
@@ -97,6 +124,13 @@
         }
       }
       let zoomOptions = {
+        limits: {
+          x: {
+            min: 0,
+            max: 600,
+            minRange: 20
+          }
+        },
         pan: {
           enabled: true,
           mode: 'x',
@@ -116,7 +150,6 @@
         }
       }
       let config = {
-        type: 'line',
         data: data,
         options: {
           scales: {
