@@ -1,10 +1,14 @@
 <body>
-  <canvas></canvas>
+  <canvas id="line-chart"></canvas>
 
   <style>
     body {
-      padding-top: 5vh;
+      padding-top: 8vh;
+      padding-left: 10%;
       background-color: #182432;
+    }
+    #line-chart {
+      display: none;
     }
   </style>
 
@@ -174,35 +178,224 @@
       chart = new Chart(context, config);
     }
     // Получение данных с сервера
-    axios.get('https://www.alphavantage.co/query?function=ALUMINUM&interval=monthly&apikey=demo')
-    .then((response)=>{
-      let data = response.data.data;
-      let xData = [];
-      let yData = [];
-      for(let i = data.length - 1; i > 0; i--){
-        if(data[i].value !== '.'){
-          xData.push(data[i].date);
-          yData.push(data[i].value);
-        }
-      }
-      let xStartData = [];
-      let yStartData = [];
-      let xParseData = [];
-      let yParseData = [];
-      for(let i = 0; i < xData.length; i++){
-        if(i < 50){
-          xStartData.push(xData[i]);
-          yStartData.push(yData[i]);
-        }else{
-          xParseData.push(xData[i]);
-          yParseData.push(yData[i]);
-        }
-      }
-      createLineChart(xStartData, yStartData);
-      realTimeDemo(xParseData, yParseData);
-    });
+    // axios.get('https://www.alphavantage.co/query?function=ALUMINUM&interval=monthly&apikey=demo')
+    // .then((response)=>{
+    //   let data = response.data.data;
+    //   let xData = [];
+    //   let yData = [];
+    //   for(let i = data.length - 1; i > 0; i--){
+    //     if(data[i].value !== '.'){
+    //       xData.push(data[i].date);
+    //       yData.push(data[i].value);
+    //     }
+    //   }
+    //   let xStartData = [];
+    //   let yStartData = [];
+    //   let xParseData = [];
+    //   let yParseData = [];
+    //   for(let i = 0; i < xData.length; i++){
+    //     if(i < 50){
+    //       xStartData.push(xData[i]);
+    //       yStartData.push(yData[i]);
+    //     }else{
+    //       xParseData.push(xData[i]);
+    //       yParseData.push(yData[i]);
+    //     }
+    //   }
+    //   createLineChart(xStartData, yStartData);
+    //   realTimeDemo(xParseData, yParseData);
+    // });
   
-    // ОБРАБОТЧИКИ СОБЫТИЙ
-    // window.addEventListener('click', ()=>pauseMode = !pauseMode);
+    // Другие типы диаграмм [урок #5]
+    // Константы
+    const backgroundColors = ['rgba(255, 99, 132, 0.5', 'rgba(54, 162, 235, 0.5'];
+    const borderColors = ['rgba(255, 99, 132, 1', 'rgba(54, 162, 235, 1']
+    // Функции
+    const getOptions = (type) => {
+      if(type === 'polarArea' || type === 'radar'){
+        return {
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              ticks: {
+                color: 'rgba(74, 169, 230, 0.9)'
+              },
+              border: {
+                color: 'rgba(74, 169, 230, 1)'
+              },
+              grid: {
+                color: 'rgba(74, 169, 230, 0.3)'
+              }
+            },
+            y: {
+              ticks: {
+                color: 'rgba(74, 169, 230, 0.9)'
+              },
+              border: {
+                color: 'rgba(74, 169, 230, 1)'
+              },
+              grid: {
+                color: 'rgba(74, 169, 230, 0.3)'
+              }            
+            },
+            r: {
+              pointLabels: {
+                color: 'rgba(74, 169, 230, 1)'
+              },
+              ticks: {
+                color: 'rgba(74, 169, 230, 0.9)',
+                backdropColor: 'rgba(0,0,0,0)'
+              },
+              border: {
+                color: 'rgba(74, 169, 230, 1)'
+              },
+              grid: {
+                color: 'rgba(74, 169, 230, 0.3)'
+              }              
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      }else{
+        return {
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              ticks: {
+                color: 'rgba(74, 169, 230, 0.9)'
+              },
+              border: {
+                color: 'rgba(74, 169, 230, 1)'
+              },
+              grid: {
+                color: 'rgba(74, 169, 230, 0.3)'
+              }
+            },
+            y: {
+              ticks: {
+                color: 'rgba(74, 169, 230, 0.9)'
+              },
+              border: {
+                color: 'rgba(74, 169, 230, 1)'
+              },
+              grid: {
+                color: 'rgba(74, 169, 230, 0.3)'
+              }            
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      }
+    }
+    const generateData = (arrayCount, type = '') => {
+      let result = [];
+      for(let i = 0; i < arrayCount; i++){        
+        switch(type){
+          case 'scatter': {
+            result.push({
+              x: Math.random()*i,
+              y: Math.random()*i
+            })
+            break;
+          }
+          case 'bubble': {
+            result.push({
+              x: Math.random()*100,
+              y: Math.random()*100,
+              r: Math.random()*10
+            })
+            break;
+          }
+          default: {
+            result.push((Math.random()*100)+50);
+            break;
+          }
+        }
+      }
+      return result;
+    }
+    const createChart = (type, data) => {
+      let div = window.document.createElement('div');
+      div.style.display = 'inline-block';
+      div.style.float = 'left';
+      div.style.width = '30%';
+      if(window.screen.width < 800) div.style.width = '100%'; // phone
+      console.log(window.innerWidth)
+      div.style.height = '40vh';
+      let canvas = window.document.createElement('canvas');
+      let context = canvas.getContext('2d');
+      let chart = new Chart(context, {
+        type: type,
+        data: data,
+        options: getOptions(type)
+      });
+      div.appendChild(canvas);
+      window.document.body.appendChild(div);
+    }
+    // Создание графиков
+    createChart('pie', {
+      labels: generateData(4),
+      datasets: [{
+        data: generateData(4),
+        backgroundColor: backgroundColors,
+        borderColor: borderColors,
+        offset: 20,
+        hoverOffset: 4
+      }]
+    });
+    createChart('doughnut', {
+      labels: generateData(3),
+      datasets: [{
+        data: generateData(3),
+        backgroundColor: backgroundColors[1],
+        borderColor: borderColors[1],
+        spacing: 10,
+        hoverOffset: 10
+      }]
+    });
+    createChart('polarArea', {
+      labels: generateData(3),
+      datasets: [{
+        data: generateData(3),
+        backgroundColor: backgroundColors[0],
+        borderColor: borderColors[0],
+        offset: 15,
+        hoverOffset: 4
+      }]
+    });
+    createChart('radar', {
+      labels: ['Mon', 'Tue', 'Wed', 'Thur', 'Fri'],
+      datasets: [{
+        data: generateData(5),
+        backgroundColor: 'rgba(255, 99, 132, 0.2',
+        borderColor: borderColors[0],
+        borderWidth: 2
+      },{
+        data: generateData(5),
+        backgroundColor: 'rgba(54, 162, 235, 0.2',
+        borderColor: borderColors[1],
+        borderWidth: 2
+      }]
+    });
+    createChart('scatter', {
+      datasets: [{
+        data: generateData(200, 'scatter'),
+        backgroundColor: borderColors[0]
+      }]
+    });
+    createChart('bubble', {
+      datasets: [{
+        data: generateData(100, 'bubble'),
+        backgroundColor: borderColors[0]
+      }]
+    })
   </script>
 </body>
